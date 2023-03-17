@@ -1,0 +1,61 @@
+---
+title: "map-read-join-do"
+author: "Hannah McSorley"
+date: "2023-03-16"
+output: html_document
+---
+# Purpose
+
+to map to a directory, read all of the files of a specific type (e.g., .csv), and join them all together (append or combine), so that work can be done on the full set. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE, message = FALSE, warning = FALSE)
+```
+
+# Setup
+
+```{r, package.startup.message = FALSE}
+# load packages
+library(tidyverse)  # tidyverse includes: dplyr, ggplot2, purrr, readr, forcats
+library(knitr)      # tidy tables, knitting docs
+library(lubridate)  # dates, times, ranges
+library(broom)      # tidy stats
+# install.packages("devtools")
+# devtools::install_github("USGS-R/Rainmaker")
+library(Rainmaker)  # USGS tool -- https://github.com/USGS-R/Rainmaker
+library(viridis)    # pretty colour-blind-friendly pallete
+```
+
+
+some code that might be helpful, pulled from Thesis (https://github.com/HJMcSorley/UBC_MSc_thesis/blob/c19cccc1d4eb11ca735053f1579b710634751a64/_Step1_Data-Wrangling_Thesis-UBC-forWater-MSc_HMc.Rmd)
+
+```
+{r}
+## directory 2 (trips 9-23) with 18 columns
+# read in all the files (trips 9 -22)
+shimadzu_2 <- 
+  list.files(path = "R-inputs_UBC-forWater-MSc_HMc/shimadzu/results_TOC/block2_18columns/", 
+             pattern = "*.txt") %>% 
+  set_names(str_extract(., "([a-z]{4,}+[0-9]*+)")) %>%
+  purrr::map_dfr(~ read.table(file = file.path("R-inputs_UBC-forWater-MSc_HMc/shimadzu/results_TOC/block2_18columns/", .), 
+                              row.names = NULL, skip = 14, header = FALSE, col.names = eighteencolumns), .id = "source") 
+# check structure
+# str(shimadzu_2)
+# combine the two blocks into one shimadzu results dataframe
+shimadzu_results <- bind_rows(shimadzu_1, shimadzu_2)
+# str(shimadzu_results)
+# ---
+## use function 'NumberXtract()'
+# pull out numbers from alphanumerics to create:
+# factor variable for trip numbers   (from 'source')
+# numeric variable for NPOC-results  (from 'Result')
+# factor variable for vial number    (from 'Sample.Name')
+shimadzu_results <- shimadzu_results %>% 
+  mutate(trip = as_factor(NumberXtract(source)),
+         NPOC_mgL = as.numeric(NumberXtract(Result)),
+         vial = as.numeric(NumberXtract(Sample.Name)))
+```
+
+perhaps we can turn this into a function!
+
+
